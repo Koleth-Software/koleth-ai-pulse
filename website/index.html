@@ -302,6 +302,13 @@
         gap: 10px;
       }
 
+      .auth-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 10px;
+        align-items: end;
+      }
+
       .field {
         display: grid;
         gap: 5px;
@@ -387,6 +394,20 @@
       .admin-status {
         color: var(--muted);
         min-height: 22px;
+      }
+
+      .admin-panel.is-locked .admin-secured {
+        display: none;
+      }
+
+      .secondary-action {
+        border: 1px solid var(--ink);
+        border-radius: 4px;
+        min-height: 40px;
+        padding: 8px 12px;
+        cursor: pointer;
+        background: var(--panel);
+        color: var(--ink);
       }
 
       .layout {
@@ -504,7 +525,8 @@
         .layout,
         .admin-grid,
         .source-form,
-        .bot-form {
+        .bot-form,
+        .auth-form {
           grid-template-columns: 1fr;
         }
 
@@ -580,16 +602,29 @@
         </aside>
       </section>
 
-      <section class="admin-panel" id="yonetim-panel" aria-label="Yönetim paneli">
+      <section class="admin-panel is-locked" id="yonetim-panel" aria-label="Yönetim paneli">
         <div class="admin-head">
           <div>
             <h2>Yönetim</h2>
             <p class="subtitle">Kaynak listesi ve genel kaynaklarda kullanılan AI filtre kelimeleri.</p>
           </div>
-          <button class="refresh" id="collect-now" type="button">Şimdi Topla</button>
+          <button class="refresh admin-secured" id="collect-now" type="button">Şimdi Topla</button>
         </div>
 
         <div class="admin-block">
+          <h3>Yönetim Erişimi</h3>
+          <form class="auth-form" id="admin-auth-form">
+            <label class="field">
+              Yönetim Tokenı
+              <input name="admin_token" type="password" autocomplete="current-password" placeholder="ADMIN_TOKEN" />
+            </label>
+            <button class="refresh" type="submit">Giriş</button>
+            <button class="secondary-action" id="clear-admin-auth" type="button">Çıkış</button>
+            <span class="admin-status field-full" id="auth-status"></span>
+          </form>
+        </div>
+
+        <div class="admin-block admin-secured">
           <h3>Discord Bot</h3>
           <form class="bot-form" id="bot-form">
             <label class="field check-field">
@@ -641,7 +676,7 @@
           </form>
         </div>
 
-        <div class="admin-grid">
+        <div class="admin-grid admin-secured">
           <div class="admin-block">
             <h3>Kaynak Ekle</h3>
             <form class="source-form" id="source-form">
@@ -691,7 +726,7 @@
           </div>
         </div>
 
-        <div class="admin-block">
+        <div class="admin-block admin-secured">
           <h3>Tanımlı Kaynaklar</h3>
           <div class="admin-list" id="config-sources"></div>
         </div>
@@ -709,6 +744,7 @@
         items: [],
         sources: [],
         adminConfig: { sources: [], keywords_filter: [] },
+        adminToken: sessionStorage.getItem("koleth-admin-token") || "",
         botConfig: {
           enabled: true,
           channel_id: "",
@@ -732,6 +768,9 @@
       const headlineMode = document.querySelector("#headline-mode");
       const adminStatus = document.querySelector("#admin-status");
       const botStatus = document.querySelector("#bot-status");
+      const authStatus = document.querySelector("#auth-status");
+      const adminPanel = document.querySelector("#yonetim-panel");
+      const adminAuthForm = document.querySelector("#admin-auth-form");
       const configSources = document.querySelector("#config-sources");
       const keywordsBox = document.querySelector("#keywords-box");
       const botForm = document.querySelector("#bot-form");
@@ -845,6 +884,20 @@
         botStatus.textContent = message;
       }
 
+      function setAuthStatus(message) {
+        authStatus.textContent = message;
+      }
+
+      function setAdminLocked(locked, message = "") {
+        adminPanel.classList.toggle("is-locked", locked);
+        if (message) setAuthStatus(message);
+      }
+
+      function adminHeaders() {
+        if (!state.adminToken) return {};
+        return { Authorization: `Bearer ${state.adminToken}` };
+      }
+
       function renderBot() {
         const elements = botForm.elements;
         elements.enabled.checked = Boolean(state.botConfig.enabled);
@@ -886,27 +939,52 @@
         Object.entries(params).forEach(([key, value]) => {
           if (value) url.searchParams.set(key, value);
         });
+        const headers = {
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...(options.auth ? adminHeaders() : {}),
+        };
+        if (options.auth && !state.adminToken) {
+          throw new Error("Yönetim tokenı gerekli");
+        }
         const init = {
           method: options.method || "GET",
-          headers: options.body ? { "Content-Type": "application/json" } : undefined,
+          headers: Object.keys(headers).length ? headers : undefined,
           body: options.body ? JSON.stringify(options.body) : undefined,
         };
         const response = await fetch(url, init);
-        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        if (!response.ok) {
+          let detail = `${response.status} ${response.statusText}`;
+          try {
+            const payload = await response.json();
+            detail = typeof payload.detail === "string" ? payload.detail : detail;
+          } catch {
+            // Use the generic HTTP message when the API does not return JSON.
+          }
+          throw new Error(detail);
+        }
         return response.json();
       }
 
       async function loadAdmin() {
+        if (!state.adminToken) {
+          setAdminLocked(true, "Yönetim için ADMIN_TOKEN gir.");
+          setAdminStatus("");
+          setBotStatus("");
+          return;
+        }
+        setAdminLocked(false, "Yönetim doğrulanıyor...");
         try {
           const [adminConfig, botConfig] = await Promise.all([
-            apiFetch("yonetim/config"),
-            apiFetch("yonetim/bot"),
+            apiFetch("yonetim/config", {}, { auth: true }),
+            apiFetch("yonetim/bot", {}, { auth: true }),
           ]);
           state.adminConfig = adminConfig;
           state.botConfig = botConfig;
           renderAdmin();
           renderBot();
+          setAuthStatus("Yönetim erişimi açık.");
         } catch (error) {
+          setAdminLocked(true, `Yönetim erişimi reddedildi: ${error.message}`);
           setAdminStatus(`Yönetim verisi alınamadı: ${error.message}`);
           setBotStatus(`Bot ayarı alınamadı: ${error.message}`);
         }
@@ -950,6 +1028,23 @@
         localStorage.setItem("koleth-api-base", state.apiBase);
         loadData();
       });
+      adminAuthForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const token = event.currentTarget.elements.admin_token.value.trim();
+        if (!token) {
+          setAdminLocked(true, "Yönetim tokenı gir.");
+          return;
+        }
+        state.adminToken = token;
+        sessionStorage.setItem("koleth-admin-token", token);
+        event.currentTarget.elements.admin_token.value = "";
+        await loadAdmin();
+      });
+      document.querySelector("#clear-admin-auth").addEventListener("click", () => {
+        state.adminToken = "";
+        sessionStorage.removeItem("koleth-admin-token");
+        setAdminLocked(true, "Yönetim oturumu kapatıldı.");
+      });
       sources.addEventListener("click", (event) => {
         const button = event.target.closest("[data-source]");
         if (button) loadData(button.dataset.source);
@@ -960,7 +1055,7 @@
         const payload = Object.fromEntries(form.entries());
         setAdminStatus("Kaynak kaydediliyor...");
         try {
-          state.adminConfig = await apiFetch("yonetim/kaynaklar", {}, { method: "POST", body: payload });
+          state.adminConfig = await apiFetch("yonetim/kaynaklar", {}, { method: "POST", body: payload, auth: true });
           event.currentTarget.reset();
           renderAdmin();
           setAdminStatus("Kaynak kaydedildi.");
@@ -985,7 +1080,7 @@
 
         setBotStatus("Bot ayarları kaydediliyor...");
         try {
-          state.botConfig = await apiFetch("yonetim/bot", {}, { method: "PUT", body: payload });
+          state.botConfig = await apiFetch("yonetim/bot", {}, { method: "PUT", body: payload, auth: true });
           renderBot();
           setBotStatus(token ? "Kaydedildi. Token değiştiyse botu yeniden başlat." : "Kaydedildi.");
         } catch (error) {
@@ -1000,7 +1095,7 @@
           state.adminConfig = await apiFetch(
             `yonetim/kaynaklar/${encodeURIComponent(button.dataset.deleteSource)}`,
             {},
-            { method: "DELETE" },
+            { method: "DELETE", auth: true },
           );
           renderAdmin();
           setAdminStatus("Kaynak silindi.");
@@ -1014,6 +1109,7 @@
           state.adminConfig = await apiFetch("yonetim/keywords", {}, {
             method: "PUT",
             body: { keywords_filter: keywordsBox.value.split(/\r?\n/) },
+            auth: true,
           });
           renderAdmin();
           setAdminStatus("Kelimeler kaydedildi.");
@@ -1024,7 +1120,7 @@
       document.querySelector("#collect-now").addEventListener("click", async () => {
         setAdminStatus("Toplama çalışıyor...");
         try {
-          const result = await apiFetch("yonetim/topla", {}, { method: "POST" });
+          const result = await apiFetch("yonetim/topla", {}, { method: "POST", auth: true });
           setAdminStatus(`${result.inserted} yeni haber eklendi, ${Object.keys(result.errors).length} kaynak hata verdi.`);
           loadData();
         } catch (error) {

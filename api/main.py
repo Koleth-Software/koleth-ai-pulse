@@ -3,13 +3,14 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import secrets
 import sys
 from contextlib import asynccontextmanager
 from contextlib import suppress
 from pathlib import Path
 from typing import Any, AsyncIterator
 
-from fastapi import FastAPI, Header, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -82,6 +83,79 @@ def env_int(name: str, default: int, *, minimum: int = 1, maximum: int | None = 
     if maximum is not None:
         value = min(maximum, value)
     return value
+
+
+def is_production_runtime() -> bool:
+    return bool(os.getenv("VERCEL") or os.getenv("DATABASE_URL", "").strip())
+
+
+def configured_admin_token() -> str:
+    return os.getenv("ADMIN_TOKEN", "").strip() or os.getenv("ADMIN_PASSWORD", "").strip()
+
+
+def configured_publisher_tokens() -> list[str]:
+    values = [
+        os.getenv("BOT_API_TOKEN", "").strip(),
+        os.getenv("API_AUTH_TOKEN", "").strip(),
+        configured_admin_token(),
+    ]
+    return list(dict.fromkeys(value for value in values if value))
+
+
+def bearer_token(authorization: str | None) -> str:
+    if not authorization:
+        return ""
+    scheme, _, value = authorization.partition(" ")
+    if scheme.casefold() != "bearer":
+        return ""
+    return value.strip()
+
+
+def token_matches(candidate: str, allowed_tokens: list[str]) -> bool:
+    return bool(candidate) and any(secrets.compare_digest(candidate, token) for token in allowed_tokens)
+
+
+def require_admin(
+    authorization: str | None = Header(default=None),
+    x_admin_token: str | None = Header(default=None),
+) -> None:
+    token = configured_admin_token()
+    if not token:
+        if is_production_runtime():
+            raise HTTPException(status_code=503, detail="ADMIN_TOKEN tanımlanmalı")
+        return
+
+    candidate = bearer_token(authorization) or str(x_admin_token or "").strip()
+    if not token_matches(candidate, [token]):
+        raise HTTPException(
+            status_code=401,
+            detail="Yönetim yetkisi gerekli",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+def require_publisher(
+    authorization: str | None = Header(default=None),
+    x_api_token: str | None = Header(default=None),
+    x_admin_token: str | None = Header(default=None),
+) -> None:
+    tokens = configured_publisher_tokens()
+    if not tokens:
+        if is_production_runtime():
+            raise HTTPException(status_code=503, detail="BOT_API_TOKEN veya ADMIN_TOKEN tanımlanmalı")
+        return
+
+    candidates = [
+        bearer_token(authorization),
+        str(x_api_token or "").strip(),
+        str(x_admin_token or "").strip(),
+    ]
+    if not any(token_matches(candidate, tokens) for candidate in candidates):
+        raise HTTPException(
+            status_code=401,
+            detail="Bot API yetkisi gerekli",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 def should_start_auto_collector() -> bool:
@@ -235,17 +309,17 @@ def bot_config_or_400() -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Bot ayarları okunamadı: {exc}") from exc
 
 
-@app.get("/yonetim/config")
+@app.get("/yonetim/config", dependencies=[Depends(require_admin)])
 def yonetim_config() -> dict[str, Any]:
     return config_or_400()
 
 
-@app.get("/yonetim/bot")
+@app.get("/yonetim/bot", dependencies=[Depends(require_admin)])
 def yonetim_bot() -> dict[str, Any]:
     return public_bot_config(bot_config_or_400())
 
 
-@app.put("/yonetim/bot")
+@app.put("/yonetim/bot", dependencies=[Depends(require_admin)])
 def yonetim_bot_guncelle(payload: BotSettingsPayload) -> dict[str, Any]:
     current = bot_config_or_400()
     updated = current | payload.model_dump(exclude_none=True)
@@ -258,7 +332,7 @@ def yonetim_bot_guncelle(payload: BotSettingsPayload) -> dict[str, Any]:
     return public_bot_config(saved)
 
 
-@app.post("/yonetim/kaynaklar")
+@app.post("/yonetim/kaynaklar", dependencies=[Depends(require_admin)])
 def yonetim_kaynak_ekle(payload: SourcePayload) -> dict[str, Any]:
     config = config_or_400()
     try:
@@ -269,7 +343,7 @@ def yonetim_kaynak_ekle(payload: SourcePayload) -> dict[str, Any]:
     return config
 
 
-@app.put("/yonetim/kaynaklar/{source_name}")
+@app.put("/yonetim/kaynaklar/{source_name}", dependencies=[Depends(require_admin)])
 def yonetim_kaynak_guncelle(source_name: str, payload: SourcePayload) -> dict[str, Any]:
     config = config_or_400()
     if not any(str(source.get("name", "")).casefold() == source_name.casefold() for source in config["sources"]):
@@ -282,7 +356,7 @@ def yonetim_kaynak_guncelle(source_name: str, payload: SourcePayload) -> dict[st
     return config
 
 
-@app.delete("/yonetim/kaynaklar/{source_name}")
+@app.delete("/yonetim/kaynaklar/{source_name}", dependencies=[Depends(require_admin)])
 def yonetim_kaynak_sil(source_name: str) -> dict[str, Any]:
     config = config_or_400()
     if not remove_source(config, source_name):
@@ -291,7 +365,7 @@ def yonetim_kaynak_sil(source_name: str) -> dict[str, Any]:
     return config
 
 
-@app.put("/yonetim/keywords")
+@app.put("/yonetim/keywords", dependencies=[Depends(require_admin)])
 def yonetim_keywords(payload: KeywordsPayload) -> dict[str, Any]:
     config = config_or_400()
     keywords = [keyword.strip() for keyword in payload.keywords_filter if keyword.strip()]
@@ -300,7 +374,7 @@ def yonetim_keywords(payload: KeywordsPayload) -> dict[str, Any]:
     return config
 
 
-@app.post("/yonetim/topla")
+@app.post("/yonetim/topla", dependencies=[Depends(require_admin)])
 def yonetim_topla(
     workers: int = Query(8, ge=1, le=24),
     limit_per_source: int = Query(30, ge=1, le=100),
@@ -357,6 +431,7 @@ def haberler_yeni(
     dil: str | None = None,
     kategori: str | None = None,
     gorselli: bool = False,
+    _: None = Depends(require_publisher),
 ) -> list[dict[str, Any]]:
     with db_session(get_db_path()) as conn:
         init_db(conn)
@@ -370,7 +445,7 @@ def haberler_yeni(
 
 
 @app.post("/haberler/{haber_id}/gonderildi")
-def haber_gonderildi(haber_id: int) -> dict[str, Any]:
+def haber_gonderildi(haber_id: int, _: None = Depends(require_publisher)) -> dict[str, Any]:
     with db_session(get_db_path()) as conn:
         init_db(conn)
         if not mark_discord_sent(conn, haber_id):

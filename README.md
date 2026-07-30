@@ -98,6 +98,8 @@ DATABASE_URL=postgresql://...
 SOURCES_CONFIG_BACKEND=database
 BOT_CONFIG_BACKEND=database
 API_COLLECTOR_ENABLED=false
+ADMIN_TOKEN=uzun-rastgele-admin-token
+BOT_API_TOKEN=uzun-rastgele-bot-api-token
 CRON_SECRET=uzun-rastgele-secret
 ALLOWED_ORIGINS=https://senin-domainin.vercel.app
 ```
@@ -129,9 +131,10 @@ Bot sunucusundaki `.env`:
 DATABASE_URL=postgresql://...
 BOT_CONFIG_BACKEND=database
 API_BASE_URL=https://senin-domainin.vercel.app
+API_AUTH_TOKEN=Vercel'deki BOT_API_TOKEN ile aynı değer
 ```
 
-Bot token ve kanal ID'yi web panelden kaydettiysen bot process'ini yeniden başlat.
+Web panelde yönetim işlemleri için `ADMIN_TOKEN` girilir. Bot token ve kanal ID'yi web panelden kaydettiysen bot process'ini yeniden başlat.
 
 ## Docker
 
@@ -166,12 +169,15 @@ Docker bu proje için zorunlu değildir.
 - `POST /yonetim/topla`
 - `GET /api/cron/collect`
 
+`/yonetim/*` endpointleri `ADMIN_TOKEN` ile korunur. `/haberler/yeni` ve `/haberler/{id}/gonderildi` endpointleri bot yayın kuyruğu için `BOT_API_TOKEN`, `API_AUTH_TOKEN` veya `ADMIN_TOKEN` kabul eder.
+
 ## Güvenlik
 
 - `.env`, `config/bot.yaml`, `data/`, `.venv/` ve `.tmp/` Git'e girmez.
 - Discord token'ı açık kaynak repoya koymayın.
 - Token sızarsa Discord Developer Portal üzerinden resetleyin.
-- Yönetim panelini internete açıyorsanız reverse proxy, auth veya ağ kuralıyla koruyun.
+- Yönetim endpointleri `Authorization: Bearer <ADMIN_TOKEN>` ister. Production ortamında `ADMIN_TOKEN` tanımlı değilse yönetim kapalı kalır.
+- Bot yayın kuyruğu endpointleri `Authorization: Bearer <BOT_API_TOKEN>` ister. Bot sunucusunda aynı değer `API_AUTH_TOKEN` olarak tanımlanır.
 - `CRON_SECRET` tanımlıysa cron endpointi `Authorization: Bearer <secret>` bekler.
 
 ## Test

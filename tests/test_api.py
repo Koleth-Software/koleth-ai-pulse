@@ -138,6 +138,24 @@ def test_admin_source_config_endpoints(tmp_path, monkeypatch):
     assert saved["keywords_filter"] == ["gpt", "yapay zeka"]
 
 
+def test_admin_endpoints_require_token_in_production(tmp_path, monkeypatch):
+    db_path = tmp_path / "admin-auth.db"
+    config_path = tmp_path / "sources.yaml"
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setenv("SOURCES_CONFIG", str(config_path))
+    monkeypatch.setenv("ADMIN_TOKEN", "admin-secret")
+    config_path.write_text("sources: []\nkeywords_filter: []\n", encoding="utf-8")
+
+    with TestClient(app) as client:
+        assert client.get("/yonetim/config").status_code == 401
+        assert client.get("/yonetim/config", headers={"Authorization": "Bearer wrong"}).status_code == 401
+
+        response = client.get("/yonetim/config", headers={"Authorization": "Bearer admin-secret"})
+        assert response.status_code == 200
+        assert response.json()["sources"] == []
+
+
 def test_admin_bot_settings_endpoint_masks_token(tmp_path, monkeypatch):
     config_path = tmp_path / "bot.yaml"
     monkeypatch.setenv("BOT_CONFIG", str(config_path))
@@ -201,3 +219,28 @@ def test_bot_settings_can_use_database_backend(tmp_path, monkeypatch):
         assert payload["channel_id"] == "123456789"
         assert payload["publish_language"] == "en"
         assert payload["token_set"] is True
+
+
+def test_discord_queue_requires_publisher_token_in_production(tmp_path, monkeypatch):
+    db_path = tmp_path / "publisher-auth.db"
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setenv("BOT_API_TOKEN", "bot-secret")
+
+    with connect(db_path) as conn:
+        init_db(conn)
+        insert_news(conn, NewsItem("Protected Feed", "ai", "tr", "Protected", None, "https://example.test/protected"))
+
+    with TestClient(app) as client:
+        assert client.get("/haberler/yeni").status_code == 401
+
+        response = client.get("/haberler/yeni", headers={"Authorization": "Bearer bot-secret"})
+        assert response.status_code == 200
+        rows = response.json()
+        assert len(rows) == 1
+
+        mark_response = client.post(
+            f"/haberler/{rows[0]['id']}/gonderildi",
+            headers={"X-API-Token": "bot-secret"},
+        )
+        assert mark_response.status_code == 200

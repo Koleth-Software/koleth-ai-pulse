@@ -26,6 +26,11 @@ from shared.bot_config import load_bot_config
 
 LOGGER = logging.getLogger("koleth.bot")
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+API_AUTH_TOKEN = (
+    os.getenv("API_AUTH_TOKEN", "").strip()
+    or os.getenv("BOT_API_TOKEN", "").strip()
+    or os.getenv("ADMIN_TOKEN", "").strip()
+)
 POLL_SECONDS = int(os.getenv("BOT_POLL_SECONDS", "30"))
 MAX_DESCRIPTION = 280
 DISPLAY_TIMEZONE = timezone(timedelta(minutes=int(os.getenv("DISPLAY_UTC_OFFSET_MINUTES", "180"))))
@@ -72,10 +77,16 @@ class KolethPulseBot(discord.Client):
         LOGGER.info("logged in as %s", self.user)
 
 
+def api_headers() -> dict[str, str]:
+    if not API_AUTH_TOKEN:
+        return {}
+    return {"Authorization": f"Bearer {API_AUTH_TOKEN}"}
+
+
 async def api_get(client: KolethPulseBot, path: str, **params: Any) -> Any:
     if not client.session:
         raise RuntimeError("HTTP session is not ready")
-    async with client.session.get(f"{API_BASE_URL}{path}", params=params) as response:
+    async with client.session.get(f"{API_BASE_URL}{path}", params=params, headers=api_headers()) as response:
         response.raise_for_status()
         return await response.json()
 
@@ -83,7 +94,7 @@ async def api_get(client: KolethPulseBot, path: str, **params: Any) -> Any:
 async def api_post(client: KolethPulseBot, path: str) -> Any:
     if not client.session:
         raise RuntimeError("HTTP session is not ready")
-    async with client.session.post(f"{API_BASE_URL}{path}") as response:
+    async with client.session.post(f"{API_BASE_URL}{path}", headers=api_headers()) as response:
         response.raise_for_status()
         return await response.json()
 
