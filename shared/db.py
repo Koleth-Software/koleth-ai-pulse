@@ -261,8 +261,11 @@ def list_unsent_for_discord(
     kategori: str | None = None,
     require_image: bool = False,
 ) -> list[dict[str, Any]]:
-    where = ["discord_gonderildi = 0"]
-    params: dict[str, Any] = {"limit": max(1, min(limit, 100))}
+    where = ["discord_gonderildi = :discord_gonderildi"]
+    params: dict[str, Any] = {
+        "discord_gonderildi": False,
+        "limit": max(1, min(limit, 100)),
+    }
     if dil:
         where.append("dil = :dil")
         params["dil"] = dil
@@ -291,8 +294,8 @@ def list_unsent_for_discord(
 def mark_discord_sent(conn: Any, news_id: int) -> bool:
     cursor = execute(
         conn,
-        "UPDATE haberler SET discord_gonderildi = 1 WHERE id = :id",
-        {"id": news_id},
+        "UPDATE haberler SET discord_gonderildi = :discord_gonderildi WHERE id = :id",
+        {"discord_gonderildi": True, "id": news_id},
     )
     conn.commit()
     return cursor.rowcount > 0

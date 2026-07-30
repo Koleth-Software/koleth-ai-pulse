@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 import yaml
 
+from api import main as api_main
 from api.main import app
 from shared.db import NewsItem, connect, init_db, insert_news
 
@@ -71,6 +72,21 @@ def test_api_source_counts(tmp_path, monkeypatch):
         response = client.get("/kaynaklar")
         assert response.status_code == 200
         assert response.json()[0]["haber_sayisi"] == 1
+
+
+def test_api_prefers_database_url_when_db_path_is_not_explicit(monkeypatch):
+    monkeypatch.delenv("DB_PATH", raising=False)
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@example.test/db")
+
+    assert api_main.get_db_path() is None
+
+
+def test_api_keeps_explicit_db_path_override(tmp_path, monkeypatch):
+    db_path = tmp_path / "override.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@example.test/db")
+
+    assert api_main.get_db_path() == str(db_path)
 
 
 def test_api_serves_website_index(tmp_path, monkeypatch):

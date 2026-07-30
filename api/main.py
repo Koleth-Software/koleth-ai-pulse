@@ -50,8 +50,15 @@ def get_allowed_origins() -> list[str]:
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
-def get_db_path() -> str:
-    return os.getenv("DB_PATH", "data/koleth-ai-pulse.db")
+def get_db_path() -> str | None:
+    explicit_db_path = os.getenv("DB_PATH", "").strip()
+    if explicit_db_path:
+        return explicit_db_path
+    if os.getenv("DATABASE_URL", "").strip():
+        return None
+    if os.getenv("VERCEL"):
+        raise RuntimeError("DATABASE_URL is required on Vercel")
+    return "data/koleth-ai-pulse.db"
 
 
 def ensure_db() -> None:
@@ -122,7 +129,12 @@ async def auto_collector_loop() -> None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    ensure_db()
+    try:
+        ensure_db()
+    except Exception:
+        LOGGER.exception("database initialization failed")
+        if not os.getenv("VERCEL"):
+            raise
     collector_task: asyncio.Task[None] | None = None
     if should_start_auto_collector():
         collector_task = asyncio.create_task(auto_collector_loop())
@@ -168,6 +180,16 @@ def website() -> FileResponse:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/health/db")
+def health_db() -> dict[str, str]:
+    try:
+        ensure_db()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    backend = "postgres" if os.getenv("DATABASE_URL", "").strip() and not os.getenv("DB_PATH", "").strip() else "sqlite"
+    return {"status": "ok", "backend": backend}
 
 
 class SourcePayload(BaseModel):

@@ -5,6 +5,9 @@ from pathlib import Path
 
 
 def load_env(path: str | os.PathLike[str] = ".env") -> None:
+    if os.getenv("VERCEL"):
+        return
+
     env_path = Path(path)
     if not env_path.exists():
         return
