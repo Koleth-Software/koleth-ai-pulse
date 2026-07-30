@@ -25,7 +25,7 @@ cd koleth-ai-pulse
 Copy-Item .env.example .env
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 
 API ve web panel:
@@ -100,6 +100,8 @@ API_COLLECTOR_ENABLED=false
 CRON_SECRET=uzun-rastgele-secret
 ALLOWED_ORIGINS=https://senin-domainin.vercel.app
 ```
+
+Vercel sadece `requirements.txt` içindeki API/cron bağımlılıklarını kurar. Yerel geliştirme, test ve Discord bot için `requirements-dev.txt` kullanın.
 
 Vercel Cron `vercel.json` içinde saatlik ayarlı gelir:
 
