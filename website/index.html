@@ -1,0 +1,1039 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Koleth AI Pulse</title>
+    <style>
+      :root {
+        --ink: #111a18;
+        --muted: #5f6964;
+        --paper: #f7f2e9;
+        --panel: #fffaf0;
+        --line: #d8d0c0;
+        --green: #176456;
+        --rust: #c84d2c;
+        --gold: #dba72e;
+        --blue: #315d84;
+        --shadow: 0 18px 50px rgba(33, 27, 18, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(90deg, rgba(17, 26, 24, 0.035) 1px, transparent 1px),
+          linear-gradient(rgba(17, 26, 24, 0.035) 1px, transparent 1px),
+          var(--paper);
+        background-size: 34px 34px;
+        color: var(--ink);
+        font-family: "Aptos", "Segoe UI", sans-serif;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 26px 0 48px;
+      }
+
+      .quick-nav {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        align-items: center;
+        margin: -2px 0 18px;
+        padding: 10px 0;
+        background: linear-gradient(180deg, var(--paper) 78%, rgba(247, 242, 233, 0));
+      }
+
+      .nav-link {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--ink);
+        border-radius: 4px;
+        padding: 8px 12px;
+        background: var(--panel);
+        color: var(--ink);
+        text-decoration: none;
+        font-weight: 700;
+        transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+      }
+
+      .nav-link:hover,
+      .nav-link:focus-visible {
+        transform: translate(-2px, -2px);
+        box-shadow: 4px 4px 0 var(--ink);
+        outline: 0;
+      }
+
+      .nav-link.accent {
+        background: var(--green);
+        color: #fffaf0;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 18px;
+        align-items: end;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 18px;
+      }
+
+      .brand {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .mark {
+        width: 56px;
+        height: 56px;
+        border: 2px solid var(--ink);
+        background: var(--gold);
+        display: grid;
+        place-items: center;
+        box-shadow: 6px 6px 0 var(--ink);
+      }
+
+      .mark span {
+        width: 28px;
+        height: 28px;
+        border: 4px solid var(--ink);
+        border-left-color: var(--green);
+        transform: rotate(20deg);
+      }
+
+      h1 {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(2.3rem, 6vw, 5.4rem);
+        line-height: 0.9;
+        letter-spacing: 0;
+      }
+
+      .subtitle {
+        margin: 8px 0 0;
+        color: var(--muted);
+        max-width: 680px;
+        font-size: 1rem;
+      }
+
+      .status {
+        display: grid;
+        gap: 8px;
+        justify-items: end;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .status strong {
+        color: var(--ink);
+      }
+
+      .visual {
+        margin: 24px 0;
+        min-height: 148px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        box-shadow: var(--shadow);
+      }
+
+      .visual img {
+        width: 100%;
+        height: 100%;
+        min-height: 180px;
+        object-fit: cover;
+      }
+
+      .ticker {
+        padding: 22px;
+        display: grid;
+        align-content: center;
+        gap: 16px;
+        border-left: 1px solid var(--line);
+      }
+
+      .ticker-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .pulse {
+        width: 12px;
+        height: 12px;
+        background: var(--rust);
+        animation: blink 1.6s infinite;
+      }
+
+      @keyframes blink {
+        50% {
+          opacity: 0.25;
+          transform: scale(0.74);
+        }
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin: 24px 0;
+      }
+
+      .chip,
+      .refresh,
+      .api-input,
+      .field input,
+      .field select,
+      .keywords-box {
+        border: 1px solid var(--ink);
+        border-radius: 4px;
+        background: var(--panel);
+        color: var(--ink);
+        min-height: 40px;
+      }
+
+      .chip,
+      .refresh {
+        cursor: pointer;
+        padding: 9px 13px;
+        transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+      }
+
+      .chip[aria-pressed="true"] {
+        background: var(--green);
+        color: #fffaf0;
+      }
+
+      .chip:hover,
+      .refresh:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 4px 4px 0 var(--ink);
+      }
+
+      .refresh {
+        background: var(--rust);
+        color: #fffaf0;
+        margin-left: auto;
+      }
+
+      .api-input {
+        width: min(100%, 320px);
+        padding: 9px 11px;
+      }
+
+      .admin-panel {
+        margin-top: 28px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+        display: grid;
+        gap: 18px;
+      }
+
+      .admin-head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: end;
+        justify-content: space-between;
+      }
+
+      .admin-head h2 {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(1.6rem, 3.4vw, 2.8rem);
+        letter-spacing: 0;
+      }
+
+      .admin-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .admin-block {
+        background: rgba(255, 250, 240, 0.74);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 16px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .admin-block h3 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .source-form,
+      .bot-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .field {
+        display: grid;
+        gap: 5px;
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+
+      .field input,
+      .field select {
+        width: 100%;
+        padding: 9px 10px;
+      }
+
+      .field-full {
+        grid-column: 1 / -1;
+      }
+
+      .check-field {
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        align-content: center;
+        min-height: 40px;
+        color: var(--ink);
+      }
+
+      .check-field input {
+        width: 18px;
+        height: 18px;
+      }
+
+      .admin-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .admin-list {
+        display: grid;
+        gap: 8px;
+        max-height: 420px;
+        overflow: auto;
+      }
+
+      .config-source {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 10px;
+        background: var(--panel);
+      }
+
+      .config-source strong,
+      .config-source small {
+        display: block;
+      }
+
+      .config-source small {
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+
+      .danger {
+        border: 1px solid var(--ink);
+        border-radius: 4px;
+        min-height: 34px;
+        padding: 6px 10px;
+        cursor: pointer;
+        background: #f4d8cf;
+        color: var(--ink);
+      }
+
+      .keywords-box {
+        width: 100%;
+        min-height: 190px;
+        padding: 10px;
+        resize: vertical;
+      }
+
+      .admin-status {
+        color: var(--muted);
+        min-height: 22px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: 24px;
+        align-items: start;
+      }
+
+      .feed {
+        display: grid;
+        gap: 12px;
+      }
+
+      .card {
+        display: grid;
+        gap: 10px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 18px;
+        transition: border-color 160ms ease, transform 160ms ease;
+      }
+
+      .card:hover {
+        border-color: var(--ink);
+        transform: translateY(-2px);
+      }
+
+      .card-image {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+
+      .tag {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px 8px;
+        background: rgba(255, 255, 255, 0.45);
+      }
+
+      .card h2 {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(1.25rem, 2.8vw, 1.9rem);
+        line-height: 1.08;
+        letter-spacing: 0;
+      }
+
+      .card p {
+        margin: 0;
+        color: #333d39;
+        line-height: 1.55;
+      }
+
+      .card a {
+        justify-self: start;
+        color: var(--blue);
+        font-weight: 700;
+        text-decoration-thickness: 2px;
+      }
+
+      .side {
+        display: grid;
+        gap: 12px;
+        position: sticky;
+        top: 20px;
+      }
+
+      .source {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        padding: 12px;
+        background: rgba(255, 250, 240, 0.72);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+
+      .source small {
+        color: var(--muted);
+      }
+
+      .count {
+        min-width: 42px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        background: var(--gold);
+        border: 1px solid var(--ink);
+      }
+
+      .empty,
+      .error {
+        padding: 24px;
+        border: 1px dashed var(--ink);
+        background: rgba(255, 250, 240, 0.7);
+      }
+
+      @media (max-width: 820px) {
+        .topbar,
+        .visual,
+        .layout,
+        .admin-grid,
+        .source-form,
+        .bot-form {
+          grid-template-columns: 1fr;
+        }
+
+        .status {
+          justify-items: start;
+        }
+
+        .ticker {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+
+        .refresh {
+          margin-left: 0;
+        }
+
+        .side {
+          position: static;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <nav class="quick-nav" aria-label="Sayfa geçişleri">
+        <a class="nav-link accent" href="/">Ana Sayfa</a>
+        <a class="nav-link" href="#haberler">Haberler</a>
+        <a class="nav-link" href="#sources-panel">Kaynaklar</a>
+        <a class="nav-link" href="/yonetim#yonetim-panel">Yönetim</a>
+        <a class="nav-link" href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+      </nav>
+
+      <header class="topbar">
+        <div class="brand">
+          <div class="mark" aria-hidden="true"><span></span></div>
+          <div>
+            <h1>Koleth AI Pulse</h1>
+            <p class="subtitle">AI gündeminden yeni sinyaller, tek yerel API üzerinden.</p>
+          </div>
+        </div>
+        <div class="status" aria-live="polite">
+          <span>API <strong id="api-state">bağlanıyor</strong></span>
+          <span id="last-updated">--</span>
+        </div>
+      </header>
+
+      <section class="visual" aria-label="Pulse özeti">
+        <img src="assets/pulse-grid.svg" alt="Koleth AI Pulse sinyal haritası" />
+        <div class="ticker">
+          <div class="ticker-row"><span class="pulse"></span><strong id="headline-count">0 haber</strong></div>
+          <div class="ticker-row"><span class="pulse" style="background: var(--green)"></span><span id="headline-sources">0 kaynak</span></div>
+          <div class="ticker-row"><span class="pulse" style="background: var(--blue)"></span><span id="headline-mode">son akış</span></div>
+        </div>
+      </section>
+
+      <nav class="toolbar" aria-label="Haber filtreleri">
+        <button class="chip" data-filter="kategori" data-value="" aria-pressed="true">Tümü</button>
+        <button class="chip" data-filter="kategori" data-value="ai" aria-pressed="false">AI</button>
+        <button class="chip" data-filter="kategori" data-value="research" aria-pressed="false">Research</button>
+        <button class="chip" data-filter="kategori" data-value="community" aria-pressed="false">Community</button>
+        <button class="chip" data-filter="kategori" data-value="genel" aria-pressed="false">Genel</button>
+        <button class="chip" data-filter="dil" data-value="tr" aria-label="Türkçe" aria-pressed="true">🇹🇷</button>
+        <button class="chip" data-filter="dil" data-value="en" aria-label="İngilizce" aria-pressed="false">🇬🇧</button>
+        <button class="chip" data-filter="dil" data-value="" aria-pressed="false">Tüm Diller</button>
+        <input class="api-input" id="api-base" aria-label="API adresi" />
+        <button class="refresh" id="refresh" type="button">Yenile</button>
+      </nav>
+
+      <section class="layout" id="haberler">
+        <div class="feed" id="feed"></div>
+        <aside class="side" id="sources-panel" aria-label="Kaynaklar">
+          <div id="sources"></div>
+        </aside>
+      </section>
+
+      <section class="admin-panel" id="yonetim-panel" aria-label="Yönetim paneli">
+        <div class="admin-head">
+          <div>
+            <h2>Yönetim</h2>
+            <p class="subtitle">Kaynak listesi ve genel kaynaklarda kullanılan AI filtre kelimeleri.</p>
+          </div>
+          <button class="refresh" id="collect-now" type="button">Şimdi Topla</button>
+        </div>
+
+        <div class="admin-block">
+          <h3>Discord Bot</h3>
+          <form class="bot-form" id="bot-form">
+            <label class="field check-field">
+              <input name="enabled" type="checkbox" />
+              Aktif
+            </label>
+            <label class="field check-field">
+              <input name="require_image" type="checkbox" />
+              Sadece görselli
+            </label>
+            <label class="field">
+              Kanal ID
+              <input name="channel_id" inputmode="numeric" placeholder="1530629908789854229" />
+            </label>
+            <label class="field">
+              Bot Token
+              <input name="discord_token" type="password" autocomplete="off" />
+            </label>
+            <label class="field">
+              Gönderim Dili
+              <select name="publish_language">
+                <option value="">Tüm Diller</option>
+                <option value="tr">🇹🇷</option>
+                <option value="en">🇬🇧</option>
+              </select>
+            </label>
+            <label class="field">
+              Kategori
+              <select name="publish_category">
+                <option value="">Tümü</option>
+                <option value="ai">ai</option>
+                <option value="research">research</option>
+                <option value="community">community</option>
+                <option value="genel">genel</option>
+              </select>
+            </label>
+            <label class="field">
+              Kontrol Sıklığı
+              <input name="poll_seconds" type="number" min="5" max="3600" step="5" />
+            </label>
+            <label class="field">
+              Tur Başına Haber
+              <input name="max_per_cycle" type="number" min="1" max="20" step="1" />
+            </label>
+            <div class="admin-actions field-full">
+              <button class="refresh" type="submit">Bot Ayarlarını Kaydet</button>
+              <span class="admin-status" id="bot-status"></span>
+            </div>
+          </form>
+        </div>
+
+        <div class="admin-grid">
+          <div class="admin-block">
+            <h3>Kaynak Ekle</h3>
+            <form class="source-form" id="source-form">
+              <label class="field">
+                Ad
+                <input name="name" required placeholder="Örn. Webrazzi Yapay Zeka" />
+              </label>
+              <label class="field">
+                Dil
+                <select name="lang">
+                  <option value="tr">🇹🇷</option>
+                  <option value="en">🇬🇧</option>
+                </select>
+              </label>
+              <label class="field">
+                Kategori
+                <select name="category">
+                  <option value="genel">genel</option>
+                  <option value="ai">ai</option>
+                  <option value="research">research</option>
+                  <option value="community">community</option>
+                </select>
+              </label>
+              <label class="field">
+                Tip
+                <select name="type">
+                  <option value="rss">rss</option>
+                </select>
+              </label>
+              <label class="field field-full">
+                RSS
+                <input name="url" required placeholder="https://example.com/feed.xml" />
+              </label>
+              <div class="admin-actions field-full">
+                <button class="refresh" type="submit">Kaydet</button>
+                <span class="admin-status" id="admin-status"></span>
+              </div>
+            </form>
+          </div>
+
+          <div class="admin-block">
+            <h3>AI Anahtar Kelimeleri</h3>
+            <textarea class="keywords-box" id="keywords-box" spellcheck="false"></textarea>
+            <div class="admin-actions">
+              <button class="refresh" id="save-keywords" type="button">Kelimeleri Kaydet</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-block">
+          <h3>Tanımlı Kaynaklar</h3>
+          <div class="admin-list" id="config-sources"></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const state = {
+        apiBase:
+          new URLSearchParams(location.search).get("api") ||
+          localStorage.getItem("koleth-api-base") ||
+          location.origin,
+        kategori: "",
+        dil: new URLSearchParams(location.search).get("dil") || "tr",
+        items: [],
+        sources: [],
+        adminConfig: { sources: [], keywords_filter: [] },
+        botConfig: {
+          enabled: true,
+          channel_id: "",
+          publish_language: "",
+          publish_category: "",
+          poll_seconds: 30,
+          max_per_cycle: 10,
+          require_image: false,
+          token_set: false,
+          token_mask: "",
+        },
+      };
+
+      const feed = document.querySelector("#feed");
+      const sources = document.querySelector("#sources");
+      const apiInput = document.querySelector("#api-base");
+      const apiState = document.querySelector("#api-state");
+      const lastUpdated = document.querySelector("#last-updated");
+      const headlineCount = document.querySelector("#headline-count");
+      const headlineSources = document.querySelector("#headline-sources");
+      const headlineMode = document.querySelector("#headline-mode");
+      const adminStatus = document.querySelector("#admin-status");
+      const botStatus = document.querySelector("#bot-status");
+      const configSources = document.querySelector("#config-sources");
+      const keywordsBox = document.querySelector("#keywords-box");
+      const botForm = document.querySelector("#bot-form");
+
+      apiInput.value = state.apiBase;
+
+      function syncFilterChips() {
+        document.querySelectorAll(".chip").forEach((button) => {
+          button.setAttribute(
+            "aria-pressed",
+            String(state[button.dataset.filter] === button.dataset.value),
+          );
+        });
+      }
+
+      function dateLabel(value) {
+        if (!value) return "tarih yok";
+        return new Intl.DateTimeFormat("tr-TR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: "Europe/Istanbul",
+        })
+          .format(new Date(value))
+          .replace(",", "");
+      }
+
+      function languageFlag(value) {
+        const flags = {
+          tr: "🇹🇷",
+          en: "🇬🇧",
+        };
+        return flags[String(value || "").toLowerCase()] || String(value || "🌐").toUpperCase();
+      }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function renderFeed() {
+        headlineCount.textContent = `${state.items.length} haber`;
+        const mode = [state.dil ? languageFlag(state.dil) : "tüm diller", state.kategori || "son akış"];
+        headlineMode.textContent = mode.join(" · ");
+
+        if (!state.items.length) {
+          feed.innerHTML = '<div class="empty">Bu görünümde haber yok.</div>';
+          return;
+        }
+
+        feed.innerHTML = state.items
+          .map(
+            (item) => `
+              <article class="card">
+                ${
+                  item.image_url
+                    ? `<img class="card-image" src="${escapeHtml(item.image_url)}" alt="" loading="lazy" />`
+                    : ""
+                }
+                <div class="meta">
+                  <span class="tag">${escapeHtml(item.kaynak)}</span>
+                  <span class="tag">${escapeHtml(item.kategori)}</span>
+                  <span class="tag">${escapeHtml(languageFlag(item.dil))}</span>
+                  <span>${dateLabel(item.yayin_tarihi || item.eklenme_tarihi)}</span>
+                </div>
+                <h2>${escapeHtml(item.baslik)}</h2>
+                <p>${escapeHtml(item.ozet || "")}</p>
+                <a href="${escapeHtml(item.link)}" target="_blank" rel="noreferrer">Haberi aç</a>
+              </article>
+            `,
+          )
+          .join("");
+      }
+
+      function renderSources() {
+        const visibleSources = state.dil
+          ? state.sources.filter((source) => source.dil === state.dil)
+          : state.sources;
+        headlineSources.textContent = `${visibleSources.length} kaynak`;
+        if (!visibleSources.length) {
+          sources.innerHTML = '<div class="empty">Kaynak istatistiği yok.</div>';
+          return;
+        }
+        sources.innerHTML = visibleSources
+          .map(
+            (source) => `
+              <button class="source" data-source="${escapeHtml(source.kaynak)}">
+                <span>
+                  <strong>${escapeHtml(source.kaynak)}</strong>
+                  <small>${escapeHtml(source.kategori)} · ${escapeHtml(languageFlag(source.dil))}</small>
+                </span>
+                <span class="count">${source.haber_sayisi}</span>
+              </button>
+            `,
+          )
+          .join("");
+      }
+
+      function setAdminStatus(message) {
+        adminStatus.textContent = message;
+      }
+
+      function setBotStatus(message) {
+        botStatus.textContent = message;
+      }
+
+      function renderBot() {
+        const elements = botForm.elements;
+        elements.enabled.checked = Boolean(state.botConfig.enabled);
+        elements.require_image.checked = Boolean(state.botConfig.require_image);
+        elements.channel_id.value = state.botConfig.channel_id || "";
+        elements.discord_token.value = "";
+        elements.discord_token.placeholder = state.botConfig.token_set
+          ? `Kayıtlı: ${state.botConfig.token_mask}`
+          : "Bot token";
+        elements.publish_language.value = state.botConfig.publish_language || "";
+        elements.publish_category.value = state.botConfig.publish_category || "";
+        elements.poll_seconds.value = state.botConfig.poll_seconds || 30;
+        elements.max_per_cycle.value = state.botConfig.max_per_cycle || 10;
+      }
+
+      function renderAdmin() {
+        keywordsBox.value = state.adminConfig.keywords_filter.join("\n");
+        if (!state.adminConfig.sources.length) {
+          configSources.innerHTML = '<div class="empty">Henüz kaynak tanımlı değil.</div>';
+          return;
+        }
+        configSources.innerHTML = state.adminConfig.sources
+          .map(
+            (source) => `
+              <div class="config-source">
+                <span>
+                  <strong>${escapeHtml(source.name)}</strong>
+                  <small>${escapeHtml(source.category)} · ${escapeHtml(languageFlag(source.lang))} · ${escapeHtml(source.url)}</small>
+                </span>
+                <button class="danger" data-delete-source="${escapeHtml(source.name)}" type="button">Sil</button>
+              </div>
+            `,
+          )
+          .join("");
+      }
+
+      async function apiFetch(path, params = {}, options = {}) {
+        const url = new URL(path, state.apiBase.endsWith("/") ? state.apiBase : `${state.apiBase}/`);
+        Object.entries(params).forEach(([key, value]) => {
+          if (value) url.searchParams.set(key, value);
+        });
+        const init = {
+          method: options.method || "GET",
+          headers: options.body ? { "Content-Type": "application/json" } : undefined,
+          body: options.body ? JSON.stringify(options.body) : undefined,
+        };
+        const response = await fetch(url, init);
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        return response.json();
+      }
+
+      async function loadAdmin() {
+        try {
+          const [adminConfig, botConfig] = await Promise.all([
+            apiFetch("yonetim/config"),
+            apiFetch("yonetim/bot"),
+          ]);
+          state.adminConfig = adminConfig;
+          state.botConfig = botConfig;
+          renderAdmin();
+          renderBot();
+        } catch (error) {
+          setAdminStatus(`Yönetim verisi alınamadı: ${error.message}`);
+          setBotStatus(`Bot ayarı alınamadı: ${error.message}`);
+        }
+      }
+
+      async function loadData(source = "") {
+        apiState.textContent = "bağlanıyor";
+        feed.innerHTML = '<div class="empty">Yükleniyor...</div>';
+        try {
+          const [items, sourceRows] = await Promise.all([
+            apiFetch("haberler", { limit: 30, kategori: state.kategori, dil: state.dil, kaynak: source }),
+            apiFetch("kaynaklar"),
+          ]);
+          state.items = items;
+          state.sources = sourceRows;
+          apiState.textContent = "çevrimiçi";
+          lastUpdated.textContent = dateLabel(new Date().toISOString());
+          renderFeed();
+          renderSources();
+          loadAdmin();
+        } catch (error) {
+          apiState.textContent = "erişilemiyor";
+          feed.innerHTML = `<div class="error">API yanıt vermedi: ${escapeHtml(error.message)}</div>`;
+        }
+      }
+
+      document.querySelectorAll(".chip").forEach((button) => {
+        button.addEventListener("click", () => {
+          document
+            .querySelectorAll(`.chip[data-filter="${button.dataset.filter}"]`)
+            .forEach((chip) => chip.setAttribute("aria-pressed", "false"));
+          button.setAttribute("aria-pressed", "true");
+          state[button.dataset.filter] = button.dataset.value;
+          loadData();
+        });
+      });
+
+      document.querySelector("#refresh").addEventListener("click", () => loadData());
+      apiInput.addEventListener("change", () => {
+        state.apiBase = apiInput.value.trim() || "http://127.0.0.1:8000";
+        localStorage.setItem("koleth-api-base", state.apiBase);
+        loadData();
+      });
+      sources.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-source]");
+        if (button) loadData(button.dataset.source);
+      });
+      document.querySelector("#source-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const payload = Object.fromEntries(form.entries());
+        setAdminStatus("Kaynak kaydediliyor...");
+        try {
+          state.adminConfig = await apiFetch("yonetim/kaynaklar", {}, { method: "POST", body: payload });
+          event.currentTarget.reset();
+          renderAdmin();
+          setAdminStatus("Kaynak kaydedildi.");
+        } catch (error) {
+          setAdminStatus(`Kaydedilemedi: ${error.message}`);
+        }
+      });
+      botForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const elements = event.currentTarget.elements;
+        const payload = {
+          enabled: elements.enabled.checked,
+          channel_id: elements.channel_id.value.trim(),
+          publish_language: elements.publish_language.value,
+          publish_category: elements.publish_category.value,
+          poll_seconds: Number(elements.poll_seconds.value || 30),
+          max_per_cycle: Number(elements.max_per_cycle.value || 10),
+          require_image: elements.require_image.checked,
+        };
+        const token = elements.discord_token.value.trim();
+        if (token) payload.discord_token = token;
+
+        setBotStatus("Bot ayarları kaydediliyor...");
+        try {
+          state.botConfig = await apiFetch("yonetim/bot", {}, { method: "PUT", body: payload });
+          renderBot();
+          setBotStatus(token ? "Kaydedildi. Token değiştiyse botu yeniden başlat." : "Kaydedildi.");
+        } catch (error) {
+          setBotStatus(`Kaydedilemedi: ${error.message}`);
+        }
+      });
+      configSources.addEventListener("click", async (event) => {
+        const button = event.target.closest("[data-delete-source]");
+        if (!button) return;
+        setAdminStatus("Kaynak siliniyor...");
+        try {
+          state.adminConfig = await apiFetch(
+            `yonetim/kaynaklar/${encodeURIComponent(button.dataset.deleteSource)}`,
+            {},
+            { method: "DELETE" },
+          );
+          renderAdmin();
+          setAdminStatus("Kaynak silindi.");
+        } catch (error) {
+          setAdminStatus(`Silinemedi: ${error.message}`);
+        }
+      });
+      document.querySelector("#save-keywords").addEventListener("click", async () => {
+        setAdminStatus("Kelimeler kaydediliyor...");
+        try {
+          state.adminConfig = await apiFetch("yonetim/keywords", {}, {
+            method: "PUT",
+            body: { keywords_filter: keywordsBox.value.split(/\r?\n/) },
+          });
+          renderAdmin();
+          setAdminStatus("Kelimeler kaydedildi.");
+        } catch (error) {
+          setAdminStatus(`Kaydedilemedi: ${error.message}`);
+        }
+      });
+      document.querySelector("#collect-now").addEventListener("click", async () => {
+        setAdminStatus("Toplama çalışıyor...");
+        try {
+          const result = await apiFetch("yonetim/topla", {}, { method: "POST" });
+          setAdminStatus(`${result.inserted} yeni haber eklendi, ${Object.keys(result.errors).length} kaynak hata verdi.`);
+          loadData();
+        } catch (error) {
+          setAdminStatus(`Toplama başarısız: ${error.message}`);
+        }
+      });
+
+      syncFilterChips();
+      loadData();
+    </script>
+  </body>
+</html>

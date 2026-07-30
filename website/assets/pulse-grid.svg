@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-label="Koleth AI Pulse signal map">
+  <rect width="1200" height="680" fill="#f4f0e7"/>
+  <g fill="none" stroke="#1d5f55" stroke-width="2" opacity=".55">
+    <path d="M82 504C216 362 320 585 456 384s250-20 356-160 178 28 308-52"/>
+    <path d="M42 356c130-88 206-68 332-80s242-94 388-70 238 10 380-94"/>
+    <path d="M138 220c124 70 190 86 316 28s198-82 330-44 200 66 304-10"/>
+  </g>
+  <g fill="#101c1a">
+    <circle cx="82" cy="504" r="7"/>
+    <circle cx="456" cy="384" r="10"/>
+    <circle cx="812" cy="224" r="8"/>
+    <circle cx="1120" cy="172" r="11"/>
+    <circle cx="374" cy="276" r="7"/>
+    <circle cx="762" cy="206" r="9"/>
+    <circle cx="1088" cy="194" r="7"/>
+  </g>
+  <g fill="#d44d2e" opacity=".95">
+    <circle cx="312" cy="444" r="18"/>
+    <circle cx="636" cy="302" r="24"/>
+    <circle cx="970" cy="136" r="16"/>
+  </g>
+  <g fill="#e3b440">
+    <rect x="170" y="120" width="110" height="26" rx="4"/>
+    <rect x="486" y="530" width="156" height="26" rx="4"/>
+    <rect x="824" y="446" width="126" height="26" rx="4"/>
+  </g>
+  <g fill="#101c1a" opacity=".16">
+    <circle cx="104" cy="94" r="52"/>
+    <circle cx="1068" cy="548" r="74"/>
+    <circle cx="610" cy="92" r="34"/>
+  </g>
+</svg>

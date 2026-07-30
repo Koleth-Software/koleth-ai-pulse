@@ -1,0 +1,9 @@
+[Unit]
+Description=Koleth AI Pulse collector run
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/koleth-ai-pulse
+EnvironmentFile=/opt/koleth-ai-pulse/.env
+ExecStart=/opt/koleth-ai-pulse/.venv/bin/python -m collector.collect --config config/sources.yaml

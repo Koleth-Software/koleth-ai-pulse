@@ -1,0 +1,8 @@
+enabled: true
+discord_token: ""
+channel_id: ""
+publish_language: ""
+publish_category: ""
+poll_seconds: 30
+max_per_cycle: 10
+require_image: false

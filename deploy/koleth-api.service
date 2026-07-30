@@ -1,0 +1,13 @@
+[Unit]
+Description=Koleth AI Pulse API
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/koleth-ai-pulse
+EnvironmentFile=/opt/koleth-ai-pulse/.env
+ExecStart=/opt/koleth-ai-pulse/.venv/bin/uvicorn api.main:app --host ${API_HOST} --port ${API_PORT}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

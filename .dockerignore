@@ -1,0 +1,13 @@
+.git
+.github
+.agents
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+.tmp
+.env
+config/bot.yaml
+data
+tests
+*.py[cod]

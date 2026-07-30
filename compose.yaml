@@ -1,0 +1,65 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.api
+    env_file:
+      - .env
+    environment:
+      DB_PATH: /app/data/koleth-ai-pulse.db
+      SOURCES_CONFIG: /app/config/sources.yaml
+      API_COLLECTOR_ENABLED: "true"
+    ports:
+      - "${API_HOST:-127.0.0.1}:${API_PORT:-8000}:8000"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  collector:
+    profiles:
+      - standalone-collector
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.api
+    env_file:
+      - .env
+    environment:
+      DB_PATH: /app/data/koleth-ai-pulse.db
+      SOURCES_CONFIG: /app/config/sources.yaml
+    command: >
+      sh -c "while true; do python -m collector.collect --config /app/config/sources.yaml --db /app/data/koleth-ai-pulse.db;
+      sleep $${COLLECTOR_INTERVAL_SECONDS:-3600}; done"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config:ro
+    restart: unless-stopped
+
+  bot:
+    profiles:
+      - discord
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.bot
+    env_file:
+      - .env
+    environment:
+      API_BASE_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./config:/app/config:ro
+    restart: unless-stopped

@@ -1,0 +1,13 @@
+[Unit]
+Description=Koleth AI Pulse Discord bot
+After=network.target koleth-api.service
+
+[Service]
+WorkingDirectory=/opt/koleth-ai-pulse
+EnvironmentFile=/opt/koleth-ai-pulse/.env
+ExecStart=/opt/koleth-ai-pulse/.venv/bin/python -m bot.bot
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

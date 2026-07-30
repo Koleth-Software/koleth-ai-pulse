@@ -1,0 +1,122 @@
+sources:
+- name: Webrazzi Yapay Zeka
+  type: rss
+  url: https://webrazzi.com/kategori/yapay-zeka/feed
+  lang: tr
+  category: ai
+- name: Webtekno
+  type: rss
+  url: https://www.webtekno.com/rss.xml
+  lang: tr
+  category: genel
+- name: DonanımHaber
+  type: rss
+  url: https://www.donanimhaber.com/rss/tum/
+  lang: tr
+  category: genel
+- name: Technopat
+  type: rss
+  url: https://www.technopat.net/feed/
+  lang: tr
+  category: genel
+- name: ShiftDelete
+  type: rss
+  url: https://shiftdelete.net/feed
+  lang: tr
+  category: genel
+- name: Log
+  type: rss
+  url: https://www.log.com.tr/feed/
+  lang: tr
+  category: genel
+- name: CHIP Online
+  type: rss
+  url: https://www.chip.com.tr/rss
+  lang: tr
+  category: genel
+- name: Teknoblog
+  type: rss
+  url: https://www.teknoblog.com/feed/
+  lang: tr
+  category: genel
+- name: Webrazzi Teknoloji
+  type: rss
+  url: https://webrazzi.com/kategori/teknoloji/feed
+  lang: tr
+  category: genel
+- name: Donanım Günlüğü
+  type: rss
+  url: https://donanimgunlugu.com/feed
+  lang: tr
+  category: genel
+- name: Megabayt
+  type: rss
+  url: https://www.megabayt.com/rss/news
+  lang: tr
+  category: genel
+- name: NTV Teknoloji
+  type: rss
+  url: https://www.ntv.com.tr/teknoloji.rss
+  lang: tr
+  category: genel
+- name: TechCrunch AI
+  type: rss
+  url: https://techcrunch.com/category/artificial-intelligence/feed/
+  lang: en
+  category: ai
+- name: VentureBeat AI
+  type: rss
+  url: https://venturebeat.com/category/ai/feed/
+  lang: en
+  category: ai
+- name: arXiv cs.AI
+  type: rss
+  url: https://export.arxiv.org/rss/cs.AI
+  lang: en
+  category: research
+- name: arXiv cs.CL
+  type: rss
+  url: https://export.arxiv.org/rss/cs.CL
+  lang: en
+  category: research
+- name: Reddit r/artificial
+  type: rss
+  url: https://www.reddit.com/r/artificial/.rss
+  lang: en
+  category: community
+- name: Reddit r/LocalLLaMA
+  type: rss
+  url: https://www.reddit.com/r/LocalLLaMA/.rss
+  lang: en
+  category: community
+- name: Hacker News AI
+  type: rss
+  url: https://hnrss.org/newest?q=AI
+  lang: en
+  category: community
+- name: Lojitekno
+  type: rss
+  url: https://lojitekno.tr/rss/category/teknoloji
+  lang: tr
+  category: genel
+keywords_filter:
+- yapay zeka
+- yapay zekâ
+- artificial intelligence
+- machine learning
+- deep learning
+- generative ai
+- ai
+- llm
+- gpt
+- chatgpt
+- openai
+- claude
+- gemini
+- copilot
+- mistral
+- llama
+- diffusion
+- neural
+- robotik
+- otomasyon
