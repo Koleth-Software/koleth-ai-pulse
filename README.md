@@ -5,7 +5,7 @@ Koleth AI Pulse, RSS/Atom kaynaklarından AI haberlerini toplayan, web panelinde
 Proje iki şekilde çalışabilir:
 
 - Yerel/self-hosted: SQLite ile tek makinede API, collector, web panel ve bot.
-- Production/Vercel: Vercel üzerinde API + web panel + cron collector, ayrı bir sunucuda sürekli çalışan Discord botu, kalıcı veri için Postgres.
+- Production/Vercel: Vercel üzerinde API + web panel, GitHub Actions ile collector tetikleme, ayrı bir sunucuda sürekli çalışan Discord botu, kalıcı veri için Postgres.
 
 ## Özellikler
 
@@ -15,7 +15,7 @@ Proje iki şekilde çalışabilir:
 - RSS görseli yakalama ve Discord embed içinde görsel gönderme.
 - Web panelden kaynak, keyword filtresi ve Discord bot ayarlarını yönetme.
 - SQLite ve Postgres desteği.
-- Vercel Cron için `/api/cron/collect` endpointi.
+- Zamanlanmış toplama için `/api/cron/collect` endpointi.
 
 ## Hızlı Yerel Kurulum
 
@@ -86,7 +86,8 @@ Token API yanıtında düz metin dönmez. Panel sadece token'ın kayıtlı olup 
 
 Önerilen production mimarisi:
 
-- Vercel: API, web panel, cron collector
+- Vercel: API, web panel, collector endpointi
+- GitHub Actions: saatlik collector tetikleme
 - Postgres: haberler, gönderim kuyruğu, bot ayarları, kaynak ayarları
 - VPS/Railway/Fly.io/systemd: Discord bot process'i
 
@@ -101,24 +102,25 @@ CRON_SECRET=uzun-rastgele-secret
 ALLOWED_ORIGINS=https://senin-domainin.vercel.app
 ```
 
-Vercel sadece `requirements.txt` içindeki API/cron bağımlılıklarını kurar. Yerel geliştirme, test ve Discord bot için `requirements-dev.txt` kullanın.
+Vercel sadece `requirements.txt` içindeki API bağımlılıklarını kurar. Yerel geliştirme, test ve Discord bot için `requirements-dev.txt` kullanın.
 
-Vercel Cron `vercel.json` içinde saatlik ayarlı gelir:
+Vercel Hobby hesaplarda cron job günde bir kezle sınırlıdır. Bu yüzden saatlik haber toplama `.github/workflows/collect-news.yml` içindeki GitHub Actions schedule ile yapılır:
 
-```json
-{
-  "path": "/api/cron/collect",
-  "schedule": "0 * * * *"
-}
+```yaml
+schedule:
+  - cron: "0 * * * *"
 ```
 
-30 dakikada bir toplamak için:
+GitHub repo ayarlarında şunları ekleyin:
 
-```json
-{
-  "path": "/api/cron/collect",
-  "schedule": "*/30 * * * *"
-}
+```text
+Settings -> Secrets and variables -> Actions
+
+Secret:
+CRON_SECRET=Vercel'deki CRON_SECRET ile aynı değer
+
+Variable:
+KOLETH_API_BASE_URL=https://senin-domainin.vercel.app
 ```
 
 Bot sunucusundaki `.env`:

@@ -1,0 +1,31 @@
+name: Collect News
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    env:
+      API_BASE_URL: ${{ vars.KOLETH_API_BASE_URL || 'https://koleth-ai-pulse.vercel.app' }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Trigger collector endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          url="${API_BASE_URL%/}/api/cron/collect"
+
+          if [ -n "${CRON_SECRET}" ]; then
+            curl --fail --silent --show-error --max-time 290 \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              "${url}"
+          else
+            curl --fail --silent --show-error --max-time 290 "${url}"
+          fi
