@@ -133,8 +133,6 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         ensure_db()
     except Exception:
         LOGGER.exception("database initialization failed")
-        if not os.getenv("VERCEL"):
-            raise
     collector_task: asyncio.Task[None] | None = None
     if should_start_auto_collector():
         collector_task = asyncio.create_task(auto_collector_loop())
